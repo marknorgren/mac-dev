@@ -18,10 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Command-line tools setup for editors
   - VS Code 'code' command
   - Sublime Text 'subl' command
+  - Proper permissions handling with sudo
+  - Automatic /usr/local/bin creation
 - Sensible macOS defaults configuration
   - Finder preferences (show extensions, hidden files, path bar)
   - System preferences (screenshots, trackpad, security)
   - UI/UX improvements
+  - Proper sudo usage for system-level settings
 - Added one-line installation option using curl
 
 ### Enhanced
@@ -33,3 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added checks to prevent duplicate PATH entries
   - Fixed PATH availability in current shell session
   - Added verification before proceeding with brew commands
+- Improved macOS defaults configuration
+  - Better organization by categories
+  - Added proper error handling
+  - Fixed permissions for system-level settings
+  - Added Screenshots directory creation

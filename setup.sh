@@ -61,12 +61,18 @@ setup_brew_path() {
 setup_editor_cli_tools() {
     print_message "Setting up command line tools for editors..."
     
+    # Ensure /usr/local/bin exists
+    if [ ! -d "/usr/local/bin" ]; then
+        print_message "Creating /usr/local/bin directory..."
+        sudo mkdir -p /usr/local/bin
+    fi
+    
     # VS Code CLI
     if [ -d "/Applications/Visual Studio Code.app" ]; then
         # Create symlink if it doesn't exist
         if [ ! -f "/usr/local/bin/code" ]; then
             print_message "Installing 'code' command line tool..."
-            ln -s "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" "/usr/local/bin/code"
+            sudo ln -s "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" "/usr/local/bin/code"
             print_success "'code' command line tool installed"
         else
             print_message "'code' command line tool already installed"
@@ -78,7 +84,7 @@ setup_editor_cli_tools() {
         # Create symlink if it doesn't exist
         if [ ! -f "/usr/local/bin/subl" ]; then
             print_message "Installing 'subl' command line tool..."
-            ln -s "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl" "/usr/local/bin/subl"
+            sudo ln -s "/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl" "/usr/local/bin/subl"
             print_success "'subl' command line tool installed"
         else
             print_message "'subl' command line tool already installed"
@@ -126,38 +132,40 @@ setup_editor_cli_tools
 # Configure macOS defaults
 print_message "Configuring macOS settings..."
 
-# Finder: show all filename extensions
-defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+# Create Screenshots directory if it doesn't exist
+mkdir -p "${HOME}/Screenshots"
 
-# Finder: show hidden files by default
+# Global settings
+print_message "Configuring global settings..."
+sudo defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+sudo defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+
+# Finder settings
+print_message "Configuring Finder settings..."
 defaults write com.apple.finder AppleShowAllFiles -bool true
-
-# Finder: show path bar
 defaults write com.apple.finder ShowPathbar -bool true
-
-# Keep folders on top when sorting by name
 defaults write com.apple.finder _FXSortFoldersFirst -bool true
 
-# Save screenshots to Screenshots folder
+# Screenshot settings
+print_message "Configuring screenshot settings..."
 defaults write com.apple.screencapture location -string "${HOME}/Screenshots"
-
-# Save screenshots in PNG format (other options: BMP, GIF, JPG, PDF, TIFF)
 defaults write com.apple.screencapture type -string "png"
 
-# Show battery percentage in menu bar
+# Battery settings
+print_message "Configuring menu bar settings..."
 defaults write com.apple.menuextra.battery ShowPercent -bool true
 
-# Disable auto-correct
-defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+# Trackpad settings
+print_message "Configuring trackpad settings..."
+sudo defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
+sudo defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
 
-# Enable tap to click
-defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
-defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
+# Accessibility settings
+print_message "Configuring accessibility settings..."
+sudo defaults write com.apple.universalaccess closeViewScrollWheelToggle -bool true
 
-# Use scroll gesture with the Ctrl (^) modifier key to zoom
-defaults write com.apple.universalaccess closeViewScrollWheelToggle -bool true
-
-# Show all processes in Activity Monitor
+# Activity Monitor settings
+print_message "Configuring Activity Monitor settings..."
 defaults write com.apple.ActivityMonitor ShowCategory -int 0
 
 # Restart affected applications
