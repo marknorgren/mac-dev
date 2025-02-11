@@ -22,6 +22,74 @@ print_error() {
     echo -e "${RED}==>${NC} $1"
 }
 
+verify_homebrew() {
+    print_message "Verifying Homebrew installation..."
+    
+    # Check if brew command is available
+    if ! command -v brew >/dev/null 2>&1; then
+        print_error "brew command not found in PATH"
+        return 1
+    fi
+    
+    # Determine Homebrew path based on architecture
+    if [[ $(uname -m) == "arm64" ]]; then
+        BREW_PATH="/opt/homebrew"
+    else
+        BREW_PATH="/usr/local"
+    fi
+    
+    # Check directory ownership
+    if [ ! -d "$BREW_PATH" ]; then
+        print_error "Homebrew directory ($BREW_PATH) not found"
+        return 1
+    fi
+    
+    OWNER=$(stat -f '%Su' "$BREW_PATH")
+    if [ "$OWNER" != "$USER" ]; then
+        print_error "Homebrew directory has incorrect ownership (owned by $OWNER, should be $USER)"
+        print_error "To fix, run: sudo chown -R $USER:admin $BREW_PATH"
+        return 1
+    fi
+    
+    # Check if brew doctor has critical issues
+    print_message "Running brew doctor..."
+    DOCTOR_OUTPUT=$(brew doctor 2>&1)
+    if echo "$DOCTOR_OUTPUT" | grep -q "Error:"; then
+        print_error "brew doctor reported critical issues:"
+        echo "$DOCTOR_OUTPUT" | grep "Error:" >&2
+        return 1
+    elif echo "$DOCTOR_OUTPUT" | grep -q "Warning:"; then
+        print_message "brew doctor reported warnings (these are usually okay):"
+        echo "$DOCTOR_OUTPUT" | grep "Warning:" >&2
+    fi
+    
+    # Verify core commands work
+    print_message "Testing basic Homebrew functionality..."
+    if ! brew --version >/dev/null 2>&1; then
+        print_error "Unable to get Homebrew version"
+        return 1
+    fi
+    
+    # Check PATH setup
+    if ! grep -q "brew shellenv" ~/.zprofile 2>/dev/null; then
+        print_error "Homebrew PATH setup not found in ~/.zprofile"
+        return 1
+    fi
+    
+    print_success "Homebrew is correctly installed and configured!"
+    print_message "Version: $(brew --version | head -n 1)"
+    print_message "Prefix: $(brew --prefix)"
+    print_message "Owner: $USER"
+    return 0
+}
+
+# Check if running with sudo
+if [ "$EUID" -eq 0 ]; then
+    print_error "Please do not run this script with sudo"
+    print_error "Homebrew should not be installed as root"
+    exit 1
+fi
+
 # Check if running on macOS
 if [[ "$OSTYPE" != "darwin"* ]]; then
     print_error "This script is only for macOS"
@@ -95,14 +163,38 @@ setup_editor_cli_tools() {
 # Check if Homebrew is installed
 if ! command -v brew >/dev/null 2>&1; then
     print_message "Installing Homebrew..."
+    
+    # First ensure the user has Command Line Tools installed
+    if ! xcode-select -p &>/dev/null; then
+        print_message "Installing Command Line Tools..."
+        xcode-select --install
+        print_message "Please wait for Command Line Tools installation to complete, then press any key to continue..."
+        read -n 1 -s
+    fi
+    
+    # Install Homebrew as non-root user
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
     
     # Setup Homebrew in the PATH
     setup_brew_path
     
-    print_success "Homebrew installed successfully!"
+    # Verify the installation
+    if ! verify_homebrew; then
+        print_error "Homebrew installation verification failed"
+        print_error "Please fix the reported issues and try again"
+        exit 1
+    fi
 else
     print_message "Homebrew is already installed"
+    print_message "Verifying installation..."
+    
+    # Verify existing installation
+    if ! verify_homebrew; then
+        print_error "Existing Homebrew installation has issues"
+        print_error "Please fix the reported issues and try again"
+        exit 1
+    fi
+    
     print_message "Updating Homebrew..."
     # Ensure brew is in PATH before using it
     setup_brew_path
@@ -137,8 +229,8 @@ mkdir -p "${HOME}/Screenshots"
 
 # Global settings
 print_message "Configuring global settings..."
-sudo defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-sudo defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
+defaults write NSGlobalDomain AppleShowAllExtensions -bool true
+defaults write NSGlobalDomain NSAutomaticSpellingCorrectionEnabled -bool false
 
 # Finder settings
 print_message "Configuring Finder settings..."
@@ -157,12 +249,29 @@ defaults write com.apple.menuextra.battery ShowPercent -bool true
 
 # Trackpad settings
 print_message "Configuring trackpad settings..."
-sudo defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
-sudo defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
+# These require sudo as they modify system settings
+sudo defaults write /Library/Preferences/com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
+sudo defaults write /Library/Preferences/com.apple.AppleMultitouchTrackpad Clicking -bool true
+
+# Also write to current user settings
+defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
+defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true
 
 # Accessibility settings
 print_message "Configuring accessibility settings..."
-sudo defaults write com.apple.universalaccess closeViewScrollWheelToggle -bool true
+# Note: These settings may require user interaction in System Preferences
+print_message "Note: You may need to manually enable accessibility features in System Preferences > Accessibility"
+
+# We'll skip the accessibility settings that require special permissions
+# Instead, provide instructions for manual configuration
+cat << 'EOF'
+==> Please configure these accessibility settings manually:
+1. Open System Preferences > Accessibility > Zoom
+2. Enable "Use scroll gesture with modifier keys to zoom"
+3. Select "Control" as the modifier key
+
+These settings require security permissions that can't be automated.
+EOF
 
 # Activity Monitor settings
 print_message "Configuring Activity Monitor settings..."
@@ -175,4 +284,5 @@ for app in "Finder" "SystemUIServer" "Activity Monitor"; do
 done
 
 print_success "macOS settings configured successfully!"
+print_message "Note: Some accessibility settings need to be configured manually in System Preferences"
 print_success "Basic setup completed successfully! You may need to restart your Mac for all changes to take effect." 

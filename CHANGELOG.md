@@ -36,8 +36,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added checks to prevent duplicate PATH entries
   - Fixed PATH availability in current shell session
   - Added verification before proceeding with brew commands
+  - Improved brew doctor checks to handle warnings gracefully
 - Improved macOS defaults configuration
   - Better organization by categories
   - Added proper error handling
   - Fixed permissions for system-level settings
   - Added Screenshots directory creation
+  - Fixed sudo usage with defaults command
+  - Improved handling of system vs user preferences
+  - Added proper paths for Library preferences
+  - Replaced automated accessibility settings with manual instructions
+- Enhanced security
+  - Prevent running script as root
+  - Ensure proper Homebrew ownership
+  - Verify Command Line Tools installation
+  - Add ownership verification checks
