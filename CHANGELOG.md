@@ -31,3 +31,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Support for both new installations and existing ones
   - Better handling of .zprofile updates
   - Added checks to prevent duplicate PATH entries
+  - Fixed PATH availability in current shell session
+  - Added verification before proceeding with brew commands

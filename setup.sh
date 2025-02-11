@@ -42,12 +42,16 @@ setup_brew_path() {
             echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
             eval "$(/opt/homebrew/bin/brew shellenv)"
         fi
+        # Ensure brew is available in current session
+        eval "$(/opt/homebrew/bin/brew shellenv)"
     else
         # Intel path
         if ! grep -q "brew shellenv" ~/.zprofile; then
             echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile
             eval "$(/usr/local/bin/brew shellenv)"
         fi
+        # Ensure brew is available in current session
+        eval "$(/usr/local/bin/brew shellenv)"
     fi
     
     print_success "Homebrew has been added to your PATH"
@@ -94,12 +98,17 @@ if ! command -v brew >/dev/null 2>&1; then
 else
     print_message "Homebrew is already installed"
     print_message "Updating Homebrew..."
+    # Ensure brew is in PATH before using it
+    setup_brew_path
     brew update
     
-    # Ensure Homebrew is in PATH even if it's already installed
-    setup_brew_path
-    
     print_success "Homebrew updated successfully!"
+fi
+
+# Ensure Homebrew is in PATH before proceeding
+if ! command -v brew >/dev/null 2>&1; then
+    print_error "Homebrew is not available in PATH. Please restart your terminal and run the script again."
+    exit 1
 fi
 
 # Install essential applications
